@@ -10,12 +10,12 @@ file = st.file_uploader("Upload da base", type=["xlsx"])
 if file:
     df = pd.read_excel(file)
 
-    df.columns = df.columns.str.strip()
+df.columns = df.columns.str.strip().str.upper()    
 
-    fundos = df.groupby("Ativo").agg(
-        NET_total=("NET", "sum"),
-        Clientes=("Cliente", "nunique")
-    ).reset_index()
+    fundos = df.groupby("ATIVO").agg(
+    NET_total=("NET", "sum"),
+    Clientes=("CLIENTE", "nunique")
+).reset_index()
 
     fundos["Ticket Medio"] = fundos["NET_total"] / fundos["Clientes"]
     fundos = fundos.sort_values(by="NET_total", ascending=False)

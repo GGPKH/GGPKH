@@ -11,6 +11,7 @@ if file:
     df = pd.read_excel(file)
 
 st.write(df.columns)    
+st.stop()    
 
 df.columns = df.columns.str.strip().str.upper()    
 

@@ -13,6 +13,8 @@ if file:
 
     # 🔥 Limpa nomes das colunas
     df.columns = df.columns.str.strip().str.upper()
+    df["DATA"] = pd.to_datetime(df["DATA"], errors="coerce")
+    df["NET"] = pd.to_numeric(df["NET"], errors="coerce")
 
     # 🔥 Garante que NET é número
     df["NET"] = pd.to_numeric(df["NET"], errors="coerce")
@@ -28,6 +30,10 @@ if file:
 
     # 🔥 Ticket médio
     fundos["TICKET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"]
+    fundos["NET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"]
+    fundos["NET_TOTAL"] = fundos["NET_TOTAL"].map("R$ {:,.2f}".format)
+    fundos["TICKET_MEDIO"] = fundos["TICKET_MEDIO"].map("R$ {:,.2f}".format)
+    fundos["NET_MEDIO"] = fundos["NET_MEDIO"].map("R$ {:,.2f}".format)
 
     # 🔥 Ordena
     fundos = fundos.sort_values(by="NET_TOTAL", ascending=False)
@@ -51,3 +57,25 @@ if file:
     # 🔥 Top 10 fundos
     st.subheader("📈 Top 10 Fundos")
     st.bar_chart(fundos.set_index("ATIVO")["NET_TOTAL"].head(10))
+    st.subheader("📈 Evolução do Patrimônio")
+
+    mensal = df.groupby(pd.Grouper(key="DATA", freq="M"))["NET"].sum()
+
+    st.line_chart(mensal)
+    import datetime
+
+    hoje = datetime.datetime.today()
+    
+    # 🔹 12 meses
+    df_12m = df[df["DATA"] >= hoje - pd.DateOffset(months=12)]
+    mensal_12 = df_12m.groupby(pd.Grouper(key="DATA", freq="M"))["NET"].sum()
+    
+    st.subheader("📈 Últimos 12 meses")
+    st.line_chart(mensal_12)
+    
+    # 🔹 24 meses
+    df_24m = df[df["DATA"] >= hoje - pd.DateOffset(months=24)]
+    mensal_24 = df_24m.groupby(pd.Grouper(key="DATA", freq="M"))["NET"].sum()
+    
+    st.subheader("📈 Últimos 24 meses")
+    st.line_chart(mensal_24)

@@ -30,9 +30,9 @@ produtos = df.groupby("Produto")["NET"].sum().reset_index()
 
 col1, col2, col3 = st.columns(3)
 
-    col1.metric("💰 Total Carteira", f"R$ {total:,.0f}")
-    col2.metric("📊 Nº Fundos", len(fundos))
-    col3.metric("👤 Nº Clientes", df["Cliente"].nunique())
+col1.metric("💰 Total Carteira", f"R$ {total:,.0f}")
+col2.metric("📊 Nº Fundos", len(fundos))
+col3.metric("👤 Nº Clientes", df["Cliente"].nunique())
 
 st.divider()
 

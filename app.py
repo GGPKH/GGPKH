@@ -1,103 +1,111 @@
-import pandas as pd
 import streamlit as st
+import pandas as pd
 
+# -------------------------------
+# CONFIGURAÇÃO DA PÁGINA
+# -------------------------------
 st.set_page_config(layout="wide")
+st.title("📊 Dashboard de Fundos")
 
-st.title("📊 Dashboard Carteira de Fundos")
-
-file = st.file_uploader("Upload da base", type=["xlsx"])
+# -------------------------------
+# UPLOAD DO ARQUIVO
+# -------------------------------
+file = st.file_uploader("📂 Envie sua base de dados (.xlsx)")
 
 if file:
-    # 🔥 Lê pulando a primeira linha errada
-    df = pd.read_excel(file, header=1)
 
-    # 🔥 Limpa nomes das colunas
+    # -------------------------------
+    # LEITURA DO EXCEL
+    # -------------------------------
+    df = pd.read_excel(file)
+
+    # Padroniza nomes das colunas
     df.columns = df.columns.str.strip().str.upper()
-    df["DATA"] = pd.to_datetime(df["DATA"], errors="coerce")
-    df["NET"] = pd.to_numeric(df["NET"], errors="coerce")
 
-    # 🔥 Garante que NET é número
-    df["NET"] = pd.to_numeric(df["NET"], errors="coerce")
+    st.write("🔍 Colunas encontradas:")
+    st.write(df.columns)
 
-    # 🔥 Remove linhas vazias
-    df = df.dropna(subset=["ATIVO", "NET"])
+    # -------------------------------
+    # TRATAMENTO DE DADOS
+    # -------------------------------
 
-    # 🔥 Consolidação por fundo
+    # DATA
+    if "DATA" in df.columns:
+        df["DATA"] = pd.to_datetime(df["DATA"], errors="coerce")
+
+    # NET (corrige formato brasileiro)
+    if "NET" in df.columns:
+        df["NET"] = (
+            df["NET"]
+            .astype(str)
+            .str.replace(".", "", regex=False)
+            .str.replace(",", ".", regex=False)
+        )
+        df["NET"] = pd.to_numeric(df["NET"], errors="coerce")
+
+    # CLIENTE
+    if "CLIENTE" in df.columns:
+        df["CLIENTE"] = df["CLIENTE"].astype(str)
+
+    # ATIVO
+    if "ATIVO" in df.columns:
+        df["ATIVO"] = df["ATIVO"].astype(str)
+
+    # -------------------------------
+    # AGRUPAMENTO PRINCIPAL
+    # -------------------------------
     fundos = df.groupby("ATIVO").agg(
         NET_TOTAL=("NET", "sum"),
-        CLIENTES=("CLIENTE", "nunique")
+        CLIENTES=("CLIENTE", "nunique"),
+        POSICOES=("CLIENTE", "count")
     ).reset_index()
 
-    # 🔥 Ticket médio
-    fundos["TICKET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"].replace(0, 1)
-    fundos["NET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"].replace(0, 1)
-    fundos["TICKET_MEDIO"] = fundos["TICKET_MEDIO"].map("R$ {:,.2f}".format)
-    fundos["NET_MEDIO"] = fundos["NET_MEDIO"].map("R$ {:,.2f}".format)
+    # Métricas adicionais
+    fundos["TICKET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"]
+    fundos["NET_MEDIO"] = fundos["NET_TOTAL"] / fundos["POSICOES"]
 
-    # 🔥 Ordena
-    fundos = fundos.sort_values(by="NET_TOTAL", ascending=False)
+    # -------------------------------
+    # KPIs GERAIS
+    # -------------------------------
+    total = df["NET"].sum()
+    clientes_total = df["CLIENTE"].nunique()
+    fundos_total = df["ATIVO"].nunique()
 
-    # 🔥 TOTAL GERAL
-    total = fundos["NET_TOTAL"].sum()
-    total_clientes = df["CLIENTE"].nunique()
-
-    # =========================
-    # 📊 DASHBOARD
-    # =========================
-
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     col1.metric("💰 Patrimônio Total", f"R$ {total:,.0f}")
-    col2.metric("👥 Total de Clientes", total_clientes)
+    col2.metric("👥 Clientes", clientes_total)
+    col3.metric("📦 Fundos", fundos_total)
 
-    st.subheader("🏆 Ranking por Fundo")
+    # -------------------------------
+    # FORMATAÇÃO SEGURA
+    # -------------------------------
+    def formatar_moeda(x):
+        try:
+            return f"R$ {float(x):,.2f}"
+        except:
+            return "-"
+
     fundos_view = fundos.copy()
 
-    fundos_view["NET_TOTAL"] = fundos_view["NET_TOTAL"].map("R$ {:,.2f}".format)
-    fundos_view["TICKET_MEDIO"] = fundos_view["TICKET_MEDIO"].apply(
-    lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"
-)    
-    fundos_view = fundos.copy()
+    fundos_view["NET_TOTAL"] = fundos_view["NET_TOTAL"].apply(formatar_moeda)
+    fundos_view["TICKET_MEDIO"] = fundos_view["TICKET_MEDIO"].apply(formatar_moeda)
+    fundos_view["NET_MEDIO"] = fundos_view["NET_MEDIO"].apply(formatar_moeda)
 
-    fundos_view["NET_TOTAL"] = fundos_view["NET_TOTAL"].apply(
-    lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"
-)
+    # -------------------------------
+    # TABELA FINAL
+    # -------------------------------
+    st.subheader("📊 Consolidação por Fundo")
+    st.dataframe(fundos_view.sort_values(by="CLIENTES", ascending=False), use_container_width=True)
 
-    fundos_view["TICKET_MEDIO"] = fundos_view["TICKET_MEDIO"].apply(
-    lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"
-)
+    # -------------------------------
+    # TOP 10 FUNDOS
+    # -------------------------------
+    st.subheader("🏆 Top 10 Fundos por Patrimônio")
 
-    fundos_view["NET_MEDIO"] = fundos_view["NET_MEDIO"].apply(
-    lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"
-)
+    top10 = fundos.sort_values(by="NET_TOTAL", ascending=False).head(10)
 
-    st.dataframe(fundos_view, use_container_width=True)
-    
-    st.dataframe(fundos_view, use_container_width=True)
+    st.bar_chart(top10.set_index("ATIVO")["NET_TOTAL"])
 
-
-    # 🔥 Top 10 fundos
-    st.subheader("📈 Top 10 Fundos")
-    st.bar_chart(fundos.set_index("ATIVO")["NET_TOTAL"].head(10))
-    st.subheader("📈 Evolução do Patrimônio")
-
-    mensal = df.groupby(pd.Grouper(key="DATA", freq="M"))["NET"].sum()
-
-    st.line_chart(mensal)
-    import datetime
-
-    hoje = datetime.datetime.today()
-    
-    # 🔹 12 meses
-    df_12m = df[df["DATA"] >= hoje - pd.DateOffset(months=12)]
-    mensal_12 = df_12m.groupby(pd.Grouper(key="DATA", freq="M"))["NET"].sum()
-    
-    st.subheader("📈 Últimos 12 meses")
-    st.line_chart(mensal_12)
-    
-    # 🔹 24 meses
-    df_24m = df[df["DATA"] >= hoje - pd.DateOffset(months=24)]
-    mensal_24 = df_24m.groupby(pd.Grouper(key="DATA", freq="M"))["NET"].sum()
-    
-    st.subheader("📈 Últimos 24 meses")
-    st.line_chart(mensal_24)
+else:
+    st.warning("⚠️ Envie um arquivo para começar")

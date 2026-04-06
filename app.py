@@ -46,5 +46,5 @@ st.subheader("📈 Top 10 Fundos")
 st.bar_chart(fundos.head(10).set_index("Ativo")["NET_total"])
 
 st.subheader("📊 Distribuição por Produto")
-    st.bar_chart(produtos.set_index("Produto")["NET"])
+st.bar_chart(produtos.set_index("Produto")["NET"])
   

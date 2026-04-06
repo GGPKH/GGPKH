@@ -29,8 +29,8 @@ if file:
     ).reset_index()
 
     # 🔥 Ticket médio
-    fundos["TICKET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"]
-    fundos["NET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"]
+    fundos["TICKET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"].replace(0, 1)
+    fundos["NET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"].replace(0, 1)
     fundos["TICKET_MEDIO"] = fundos["TICKET_MEDIO"].map("R$ {:,.2f}".format)
     fundos["NET_MEDIO"] = fundos["NET_MEDIO"].map("R$ {:,.2f}".format)
 
@@ -54,8 +54,24 @@ if file:
     fundos_view = fundos.copy()
 
     fundos_view["NET_TOTAL"] = fundos_view["NET_TOTAL"].map("R$ {:,.2f}".format)
-    fundos_view["TICKET_MEDIO"] = fundos_view["TICKET_MEDIO"].map("R$ {:,.2f}".format)
-    fundos_view["NET_MEDIO"] = fundos_view["NET_MEDIO"].map("R$ {:,.2f}".format)
+    fundos_view["TICKET_MEDIO"] = fundos_view["TICKET_MEDIO"].apply(
+    lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"
+)    
+   fundos_view = fundos.copy()
+
+    fundos_view["NET_TOTAL"] = fundos_view["NET_TOTAL"].apply(
+    lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"
+)
+
+    fundos_view["TICKET_MEDIO"] = fundos_view["TICKET_MEDIO"].apply(
+    lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"
+)
+
+    fundos_view["NET_MEDIO"] = fundos_view["NET_MEDIO"].apply(
+    lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"
+)
+
+st.dataframe(fundos_view, use_container_width=True)
     
     st.dataframe(fundos_view, use_container_width=True)
 

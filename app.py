@@ -1,75 +1,68 @@
 import streamlit as st
 import pandas as pd
 
-# -------------------------------
-# CONFIGURAÇÃO DA PÁGINA
-# -------------------------------
 st.set_page_config(layout="wide")
 st.title("📊 Dashboard de Fundos")
 
-# -------------------------------
-# UPLOAD DO ARQUIVO
-# -------------------------------
-file = st.file_uploader("📂 Envie sua base de dados (.xlsx)")
+file = st.file_uploader("📂 Envie sua base (.xlsx)")
 
 if file:
 
-    # -------------------------------
-    # LEITURA DO EXCEL
-    # -------------------------------
     df = pd.read_excel(file)
 
-    # Padroniza nomes das colunas
-    df.columns = df.columns.str.strip().str.upper()
+    # -------------------------------
+    # LIMPEZA PESADA DOS NOMES
+    # -------------------------------
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.upper()
+        .str.replace(" ", "_")
+        .str.replace("Ç", "C")
+        .str.replace("Ã", "A")
+    )
 
-    st.write("🔍 Colunas encontradas:")
+    st.write("📌 Colunas detectadas:")
     st.write(df.columns)
 
     # -------------------------------
-    # TRATAMENTO DE DADOS
+    # MAPEAMENTO AUTOMÁTICO
     # -------------------------------
-
-    # DATA
-    if "DATA" in df.columns:
-        df["DATA"] = pd.to_datetime(df["DATA"], errors="coerce")
-
-    # NET (corrige formato brasileiro)
-    if "NET" in df.columns:
-        df["NET"] = (
-            df["NET"]
-            .astype(str)
-            .str.replace(".", "", regex=False)
-            .str.replace(",", ".", regex=False)
-        )
-        df["NET"] = pd.to_numeric(df["NET"], errors="coerce")
-
-    # CLIENTE
-    if "CLIENTE" in df.columns:
-        df["CLIENTE"] = df["CLIENTE"].astype(str)
-
-    # ATIVO
-    if "ATIVO" in df.columns:
-        df["ATIVO"] = df["ATIVO"].astype(str)
+    col_cliente = [c for c in df.columns if "CLIENTE" in c][0]
+    col_ativo = [c for c in df.columns if "ATIVO" in c][0]
+    col_net = [c for c in df.columns if "NET" in c][0]
 
     # -------------------------------
-    # AGRUPAMENTO PRINCIPAL
+    # TRATAMENTO
     # -------------------------------
-    fundos = df.groupby("ATIVO").agg(
-        NET_TOTAL=("NET", "sum"),
-        CLIENTES=("CLIENTE", "nunique"),
-        POSICOES=("CLIENTE", "count")
+    df[col_cliente] = df[col_cliente].astype(str)
+
+    df[col_net] = (
+        df[col_net]
+        .astype(str)
+        .str.replace(".", "", regex=False)
+        .str.replace(",", ".", regex=False)
+    )
+    df[col_net] = pd.to_numeric(df[col_net], errors="coerce")
+
+    # -------------------------------
+    # AGRUPAMENTO
+    # -------------------------------
+    fundos = df.groupby(col_ativo).agg(
+        NET_TOTAL=(col_net, "sum"),
+        CLIENTES=(col_cliente, "nunique"),
+        POSICOES=(col_cliente, "count")
     ).reset_index()
 
-    # Métricas adicionais
     fundos["TICKET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"]
     fundos["NET_MEDIO"] = fundos["NET_TOTAL"] / fundos["POSICOES"]
 
     # -------------------------------
-    # KPIs GERAIS
+    # KPIs
     # -------------------------------
-    total = df["NET"].sum()
-    clientes_total = df["CLIENTE"].nunique()
-    fundos_total = df["ATIVO"].nunique()
+    total = df[col_net].sum()
+    clientes_total = df[col_cliente].nunique()
+    fundos_total = df[col_ativo].nunique()
 
     col1, col2, col3 = st.columns(3)
 
@@ -78,34 +71,27 @@ if file:
     col3.metric("📦 Fundos", fundos_total)
 
     # -------------------------------
-    # FORMATAÇÃO SEGURA
+    # FORMATADOR
     # -------------------------------
-    def formatar_moeda(x):
+    def formatar(x):
         try:
             return f"R$ {float(x):,.2f}"
         except:
             return "-"
 
-    fundos_view = fundos.copy()
+    view = fundos.copy()
 
-    fundos_view["NET_TOTAL"] = fundos_view["NET_TOTAL"].apply(formatar_moeda)
-    fundos_view["TICKET_MEDIO"] = fundos_view["TICKET_MEDIO"].apply(formatar_moeda)
-    fundos_view["NET_MEDIO"] = fundos_view["NET_MEDIO"].apply(formatar_moeda)
+    view["NET_TOTAL"] = view["NET_TOTAL"].apply(formatar)
+    view["TICKET_MEDIO"] = view["TICKET_MEDIO"].apply(formatar)
+    view["NET_MEDIO"] = view["NET_MEDIO"].apply(formatar)
 
-    # -------------------------------
-    # TABELA FINAL
-    # -------------------------------
     st.subheader("📊 Consolidação por Fundo")
-    st.dataframe(fundos_view.sort_values(by="CLIENTES", ascending=False), use_container_width=True)
+    st.dataframe(view, use_container_width=True)
 
-    # -------------------------------
-    # TOP 10 FUNDOS
-    # -------------------------------
-    st.subheader("🏆 Top 10 Fundos por Patrimônio")
+    st.subheader("🏆 Top 10 Fundos")
 
     top10 = fundos.sort_values(by="NET_TOTAL", ascending=False).head(10)
-
-    st.bar_chart(top10.set_index("ATIVO")["NET_TOTAL"])
+    st.bar_chart(top10.set_index(col_ativo)["NET_TOTAL"])
 
 else:
-    st.warning("⚠️ Envie um arquivo para começar")
+    st.warning("Envie um arquivo")

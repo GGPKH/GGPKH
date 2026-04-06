@@ -31,7 +31,6 @@ if file:
     # 🔥 Ticket médio
     fundos["TICKET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"]
     fundos["NET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"]
-    fundos["NET_TOTAL"] = fundos["NET_TOTAL"].map("R$ {:,.2f}".format)
     fundos["TICKET_MEDIO"] = fundos["TICKET_MEDIO"].map("R$ {:,.2f}".format)
     fundos["NET_MEDIO"] = fundos["NET_MEDIO"].map("R$ {:,.2f}".format)
 
@@ -52,7 +51,14 @@ if file:
     col2.metric("👥 Total de Clientes", total_clientes)
 
     st.subheader("🏆 Ranking por Fundo")
-    st.dataframe(fundos, use_container_width=True)
+    fundos_view = fundos.copy()
+
+    fundos_view["NET_TOTAL"] = fundos_view["NET_TOTAL"].map("R$ {:,.2f}".format)
+    fundos_view["TICKET_MEDIO"] = fundos_view["TICKET_MEDIO"].map("R$ {:,.2f}".format)
+    fundos_view["NET_MEDIO"] = fundos_view["NET_MEDIO"].map("R$ {:,.2f}".format)
+    
+    st.dataframe(fundos_view, use_container_width=True)
+
 
     # 🔥 Top 10 fundos
     st.subheader("📈 Top 10 Fundos")

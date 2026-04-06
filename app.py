@@ -36,15 +36,15 @@ col3.metric("👤 Nº Clientes", df["Cliente"].nunique())
 
 st.divider()
 
-    st.subheader("🏆 Top Fundos")
-    st.dataframe(fundos.head(15))
+st.subheader("🏆 Top Fundos")
+st.dataframe(fundos.head(15))
 
-    st.subheader("👥 Top Clientes")
-    st.dataframe(clientes.head(15))
+st.subheader("👥 Top Clientes")
+st.dataframe(clientes.head(15))
 
-    st.subheader("📈 Top 10 Fundos")
-    st.bar_chart(fundos.head(10).set_index("Ativo")["NET_total"])
+st.subheader("📈 Top 10 Fundos")
+st.bar_chart(fundos.head(10).set_index("Ativo")["NET_total"])
 
-    st.subheader("📊 Distribuição por Produto")
+st.subheader("📊 Distribuição por Produto")
     st.bar_chart(produtos.set_index("Produto")["NET"])
   

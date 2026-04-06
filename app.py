@@ -10,6 +10,8 @@ file = st.file_uploader("Upload da base", type=["xlsx"])
 if file:
     df = pd.read_excel(file)
 
+st.write(df.columns)    
+
 df.columns = df.columns.str.strip().str.upper()    
 
 fundos = df.groupby("ATIVO").agg(

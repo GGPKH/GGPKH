@@ -8,46 +8,46 @@ st.title("📊 Dashboard Carteira de Fundos")
 file = st.file_uploader("Upload da base", type=["xlsx"])
 
 if file:
-    df = pd.read_excel(file)
+    # 🔥 Lê pulando a primeira linha errada
+    df = pd.read_excel(file, header=1)
 
-st.write(df.columns)    
-st.stop()    
+    # 🔥 Limpa nomes das colunas
+    df.columns = df.columns.str.strip().str.upper()
 
-df.columns = df.columns.str.strip().str.upper()    
+    # 🔥 Garante que NET é número
+    df["NET"] = pd.to_numeric(df["NET"], errors="coerce")
 
-fundos = df.groupby("ATIVO").agg(
-    NET_total=("NET", "sum"),
-    Clientes=("CLIENTE", "nunique")
-).reset_index()
+    # 🔥 Remove linhas vazias
+    df = df.dropna(subset=["ATIVO", "NET"])
 
-fundos["Ticket Medio"] = fundos["NET_total"] / fundos["Clientes"]
-fundos = fundos.sort_values(by="NET_total", ascending=False)
+    # 🔥 Consolidação por fundo
+    fundos = df.groupby("ATIVO").agg(
+        NET_TOTAL=("NET", "sum"),
+        CLIENTES=("CLIENTE", "nunique")
+    ).reset_index()
 
-total = fundos["NET_total"].sum()
-fundos["%"] = fundos["NET_total"] / total
+    # 🔥 Ticket médio
+    fundos["TICKET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"]
 
-clientes = df.groupby("Cliente")["NET"].sum().reset_index()
-clientes = clientes.sort_values(by="NET", ascending=False)
+    # 🔥 Ordena
+    fundos = fundos.sort_values(by="NET_TOTAL", ascending=False)
 
-produtos = df.groupby("Produto")["NET"].sum().reset_index()
+    # 🔥 TOTAL GERAL
+    total = fundos["NET_TOTAL"].sum()
+    total_clientes = df["CLIENTE"].nunique()
 
-col1, col2, col3 = st.columns(3)
+    # =========================
+    # 📊 DASHBOARD
+    # =========================
 
-col1.metric("💰 Total Carteira", f"R$ {total:,.0f}")
-col2.metric("📊 Nº Fundos", len(fundos))
-col3.metric("👤 Nº Clientes", df["Cliente"].nunique())
+    col1, col2 = st.columns(2)
 
-st.divider()
+    col1.metric("💰 Patrimônio Total", f"R$ {total:,.0f}")
+    col2.metric("👥 Total de Clientes", total_clientes)
 
-st.subheader("🏆 Top Fundos")
-st.dataframe(fundos.head(15))
+    st.subheader("🏆 Ranking por Fundo")
+    st.dataframe(fundos, use_container_width=True)
 
-st.subheader("👥 Top Clientes")
-st.dataframe(clientes.head(15))
-
-st.subheader("📈 Top 10 Fundos")
-st.bar_chart(fundos.head(10).set_index("Ativo")["NET_total"])
-
-st.subheader("📊 Distribuição por Produto")
-st.bar_chart(produtos.set_index("Produto")["NET"])
-  
+    # 🔥 Top 10 fundos
+    st.subheader("📈 Top 10 Fundos")
+    st.bar_chart(fundos.set_index("ATIVO")["NET_TOTAL"].head(10))

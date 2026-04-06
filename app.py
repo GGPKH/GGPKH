@@ -71,7 +71,7 @@ if file:
     lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"
 )
 
-st.dataframe(fundos_view, use_container_width=True)
+    st.dataframe(fundos_view, use_container_width=True)
     
     st.dataframe(fundos_view, use_container_width=True)
 

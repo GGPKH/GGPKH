@@ -17,7 +17,7 @@ fundos = df.groupby("ATIVO").agg(
     Clientes=("CLIENTE", "nunique")
 ).reset_index()
 
-    fundos["Ticket Medio"] = fundos["NET_total"] / fundos["Clientes"]
+fundos["Ticket Medio"] = fundos["NET_total"] / fundos["Clientes"]
     fundos = fundos.sort_values(by="NET_total", ascending=False)
 
     total = fundos["NET_total"].sum()

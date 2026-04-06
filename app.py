@@ -23,10 +23,10 @@ fundos = fundos.sort_values(by="NET_total", ascending=False)
 total = fundos["NET_total"].sum()
 fundos["%"] = fundos["NET_total"] / total
 
-    clientes = df.groupby("Cliente")["NET"].sum().reset_index()
-    clientes = clientes.sort_values(by="NET", ascending=False)
+clientes = df.groupby("Cliente")["NET"].sum().reset_index()
+clientes = clientes.sort_values(by="NET", ascending=False)
 
-    produtos = df.groupby("Produto")["NET"].sum().reset_index()
+produtos = df.groupby("Produto")["NET"].sum().reset_index()
 
     col1, col2, col3 = st.columns(3)
 

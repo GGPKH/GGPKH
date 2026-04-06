@@ -57,7 +57,7 @@ if file:
     fundos_view["TICKET_MEDIO"] = fundos_view["TICKET_MEDIO"].apply(
     lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"
 )    
-   fundos_view = fundos.copy()
+    fundos_view = fundos.copy()
 
     fundos_view["NET_TOTAL"] = fundos_view["NET_TOTAL"].apply(
     lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else "-"

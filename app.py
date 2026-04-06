@@ -12,7 +12,7 @@ if file:
 
 df.columns = df.columns.str.strip().str.upper()    
 
-    fundos = df.groupby("ATIVO").agg(
+fundos = df.groupby("ATIVO").agg(
     NET_total=("NET", "sum"),
     Clientes=("CLIENTE", "nunique")
 ).reset_index()

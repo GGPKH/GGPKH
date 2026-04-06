@@ -8,7 +8,7 @@ file = st.file_uploader("📂 Envie sua base (.xlsx)")
 
 if file:
 
-    df = pd.read_excel(file)
+    df = pd.read_excel(file, header=1)
 
     # -------------------------------
     # LIMPEZA PESADA DOS NOMES

@@ -15,12 +15,12 @@ file = st.file_uploader("📂 Envie sua base (.xlsx)")
 if file:
 
     # -------------------------------
-    # LEITURA (corrige cabeçalho)
+    # LEITURA (usa linha correta do cabeçalho)
     # -------------------------------
     df = pd.read_excel(file, header=1)
 
     # -------------------------------
-    # LIMPEZA NOMES COLUNAS
+    # LIMPEZA DAS COLUNAS
     # -------------------------------
     df.columns = (
         df.columns
@@ -40,27 +40,37 @@ if file:
     col_net = [c for c in df.columns if "NET" in c][0]
 
     # -------------------------------
-    # TRATAMENTO DE DADOS
+    # FUNÇÃO ROBUSTA (BR -> FLOAT)
     # -------------------------------
+    def tratar_numero_br(x):
+        try:
+            if pd.isna(x):
+                return None
+            
+            x = str(x).strip()
 
-    # Cliente
+            if "," in x:
+                x = x.replace(".", "")   # remove milhar
+                x = x.replace(",", ".")  # decimal
+
+            return float(x)
+
+        except:
+            return None
+
+    # -------------------------------
+    # TRATAMENTO
+    # -------------------------------
     df[col_cliente] = df[col_cliente].astype(str)
+    df[col_ativo] = df[col_ativo].astype(str)
 
-    # NET (corrige padrão brasileiro)
-    df[col_net] = (
-        df[col_net]
-        .astype(str)
-        .str.replace(r"\.", "", regex=True)   # remove milhar
-        .str.replace(",", ".", regex=False)   # decimal
-    )
-    df[col_net] = pd.to_numeric(df[col_net], errors="coerce")
+    df[col_net] = df[col_net].apply(tratar_numero_br)
 
     # Remove linhas inválidas
     df = df.dropna(subset=[col_net])
 
-    # DEBUG (pode apagar depois)
-    st.write("🔍 NET corrigido (amostra):")
-    st.write(df[col_net].head())
+    # DEBUG (confere soma)
+    st.write("🔍 Soma NET corrigida:", df[col_net].sum())
 
     # -------------------------------
     # AGRUPAMENTO
@@ -71,12 +81,11 @@ if file:
         POSICOES=(col_cliente, "count")
     ).reset_index()
 
-    # Métricas
     fundos["TICKET_MEDIO"] = fundos["NET_TOTAL"] / fundos["CLIENTES"]
     fundos["NET_MEDIO"] = fundos["NET_TOTAL"] / fundos["POSICOES"]
 
     # -------------------------------
-    # KPIs GERAIS
+    # KPIs
     # -------------------------------
     total = df[col_net].sum()
     clientes_total = df[col_cliente].nunique()
@@ -118,7 +127,6 @@ if file:
     st.subheader("🏆 Top 10 Fundos por Patrimônio")
 
     top10 = fundos.sort_values(by="NET_TOTAL", ascending=False).head(10)
-
     st.bar_chart(top10.set_index(col_ativo)["NET_TOTAL"])
 
 else:
